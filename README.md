@@ -47,7 +47,7 @@ git clone https://github.com/noob-bhai/noobster-phising.git
 cd noobster-phising
 pip install -r requirements.txt
 python run.py
-
+```
 
 ▶️ Usage
 
