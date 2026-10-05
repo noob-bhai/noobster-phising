@@ -1,4 +1,4 @@
-.# 🎣 NOOBSTER PHISHING TOOL
+# 🎣 NOOBSTER PHISHING TOOL
 
 Terminal-based phishing lab tool. Local mode.  
 Menu se page choose karo → cloudflared se expose karo → data capture ho jayega.
