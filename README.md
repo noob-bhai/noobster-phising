@@ -1,4 +1,4 @@
-# 🎣 NOOBSTER PHISHING TOOL
+.# 🎣 NOOBSTER PHISHING TOOL
 
 Terminal-based phishing lab tool. Local mode.  
 Menu se page choose karo → cloudflared se expose karo → data capture ho jayega.
@@ -54,7 +54,7 @@ python run.py
 Step 1 — server start
 
 ```bash
-python3 run.py
+python run.py
 ```
 
 menu aayega → 1 (ya 2/3/4) choose karo → 0 dabao
