@@ -43,6 +43,8 @@ The author is not responsible for any misuse.
 ```bash
 pkg update && pkg upgrade -y
 pkg install python git cloudflared -y
+```
+```
 git clone https://github.com/noob-bhai/noobster-phising.git
 cd noobster-phising
 pip install -r requirements.txt
